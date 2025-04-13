@@ -5,7 +5,7 @@
 /*
  * Auxiliary function to factorize code
  */
-void board_add_edge_uni (board_vertex *source, board_vertex *destination)
+void board_add_edge_uni (board_vertex * source, board_vertex * destination)
 {
   source->degree++;
   source->neighbors =
@@ -18,7 +18,7 @@ void board_add_edge_uni (board_vertex *source, board_vertex *destination)
  * Create board from parsing a file and return false if file is
  * incorrect
  */
-bool board_read_from (board *self, FILE *file)
+bool board_read_from (board * self, FILE * file)
 {
   char line[128];
   fgets (line, sizeof (line), file);
@@ -53,27 +53,27 @@ bool board_read_from (board *self, FILE *file)
   return true;
 }
 
-void board_destroy (board *self)
+void board_destroy (board * self)
 {
   //TODO dummy instruction that MUST be changed
   if (self->size)
     return;
 }
 
-void board_Floyd_Warshall (board *self)
+void board_Floyd_Warshall (board * self)
 {
   //TODO dummy instruction that MUST be changed
   if (self->size)
     return;
 }
 
-size_t board_dist (board *self, size_t source, size_t dest)
+size_t board_dist (board * self, size_t source, size_t dest)
 {
   //TODO dummy instruction that MUST be changed
   return self->size + source + dest;
 }
 
-size_t board_next (board *self, size_t source, size_t dest)
+size_t board_next (board * self, size_t source, size_t dest)
 {
   //TODO dummy instruction that MUST be changed
   return self->size + source + dest;

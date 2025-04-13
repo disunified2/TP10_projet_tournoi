@@ -7,7 +7,7 @@
  * moves are invalid. If both a cop and a robber are on the same
  * vertex, the robber must be removed.
  */
-bool board_update_position (board *self, size_t *position, enum role r)
+bool board_update_position (board * self, size_t *position, enum role r)
 {
   if (r == COPS)
     for (size_t i = 0; i < self->cops_len; i++)
@@ -21,7 +21,7 @@ bool board_update_position (board *self, size_t *position, enum role r)
 /*
  * Returns the initial positions of either the cops or the robbers
  */
-size_t *board_initial_position (board *self, enum role r)
+size_t *board_initial_position (board * self, enum role r)
 {
   if (r == COPS)
     for (size_t i = 0; i < self->cops_len; i++)
@@ -35,7 +35,7 @@ size_t *board_initial_position (board *self, enum role r)
 /*
  * Returns the next positions of either the cops or the robbers
  */
-size_t *board_next_position (board *self, enum role r)
+size_t *board_next_position (board * self, enum role r)
 {
   return r == COPS ? self->cops : self->robbers;
 }
