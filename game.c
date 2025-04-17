@@ -1,49 +1,151 @@
 #include "algo.h"
 
+#include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
+
+typedef struct
+{
+  board_vertex **positions;
+  size_t size;
+} vector;
+
+void vector_create (vector * self)
+{
+  if (self == NULL)
+    return;
+  self->positions = NULL;
+  self->size = 0;
+}
+
+void vector_destroy (vector * self)
+{
+  if (self == NULL)
+    return;
+  free (self->positions);
+}
+
+void vector_remove_at (vector * self, size_t index)
+{
+  if (self == NULL || index >= self->size || self->size == 0)
+    return;
+  for (size_t i = index; i < self->size - 1; i++)
+    self->positions[i] = self->positions[i + 1];
+  self->size--;
+}
+
+void vector_print (vector * self)
+{
+  if (self == NULL)
+    return;
+  for (size_t i = 0; i < self->size; i++)
+    printf ("%zu\n", self->positions[i]->index);
+  fflush (stdout);
+}
+
+typedef struct
+{
+  board b;
+  vector cops;
+  vector robbers;
+  size_t remaining_turn;
+  enum role r;
+} game;
+
+void game_create (game * self)
+{
+  if (self == NULL)
+    return;
+  board_create (&(self->b));
+  vector_create (&(self->cops));
+  vector_create (&(self->robbers));
+  self->remaining_turn = 0;
+  self->r = COPS;
+}
+
+void game_destroy (game * self)
+{
+  if (self == NULL)
+    return;
+  board_destroy (&(self->b));
+  vector_destroy (&(self->cops));
+  vector_destroy (&(self->robbers));
+}
 
 /*
- * Update positions of either cops or robbers and return false if the
- * moves are invalid. If both a cop and a robber are on the same
- * vertex, the robber must be removed.
+ * Update positions of either cops or robbers and exit if the moves
+ * are invalid
  */
-bool board_update_position (board * self, size_t *position, enum role r)
+void game_update_position (game * self, size_t *new)
 {
-  if (r == COPS)
-    for (size_t i = 0; i < self->cops_len; i++)
-      self->cops[i] = position[i];
+  vector *current = self->r == COPS ? &(self->robbers) : &(self->cops);
+  if (current->positions != NULL)
+    {
+      // Check if moves are valid
+      for (size_t i = 0; i < current->size; i++)
+        if (!board_is_valid_move (&(self->b), current->positions[i]->index,
+                                  new[i]))
+          {
+            fprintf (stderr, "New position is invalid\n");
+            exit (1);
+          }
+    }
   else
-    for (size_t i = 0; i < self->robbers_len; i++)
-      self->robbers[i] = position[i];
-  return true;
+    current->positions = calloc (current->size, sizeof (*current->positions));
+  for (size_t i = 0; i < current->size; i++)
+    {
+      current->positions[i] = self->b.vertices[new[i]];
+    }
 }
 
 /*
- * Returns the initial positions of either the cops or the robbers
+ * Return the initial or next positions of either the cops or the
+ * robbers
  */
-size_t *board_initial_position (board * self, enum role r)
+vector *game_next_position (game * self)
 {
-  if (r == COPS)
-    for (size_t i = 0; i < self->cops_len; i++)
-      self->cops[i] = i;
+  vector *current = self->r == COPS ? &(self->cops) : &(self->robbers);
+  if (current->positions == NULL)
+    {
+      current->positions =
+        calloc (current->size, sizeof (*current->positions));
+      // Compute initial positions
+      for (size_t i = 0; i < current->size; i++)
+        {
+          if (self->r == COPS)
+            current->positions[i] = self->b.vertices[i];
+          else
+            current->positions[i] = self->b.vertices[self->b.size - i - 1];
+        }
+    }
   else
-    for (size_t i = 0; i < self->robbers_len; i++)
-      self->robbers[i] = self->size - i - 1;
-  return r == COPS ? self->cops : self->robbers;
+    // Compute next positions
+    for (size_t i = 0; i < current->size; i++)
+      {
+        current->positions[i] = current->positions[i];
+      }
+  return current;
 }
 
 /*
- * Returns the next positions of either the cops or the robbers
+ * Remove robbers that are on same vertices as cops and return number
+ * of remaining robbers (infinite if no cops)
  */
-size_t *board_next_position (board * self, enum role r)
+size_t game_capture_robbers (game * self)
 {
-  return r == COPS ? self->cops : self->robbers;
-}
-
-void print_positions (size_t *pos, size_t len)
-{
-  for (size_t i = 0; i < len; i++)
-    printf ("%zu\n", pos[i]);
+  if (self->cops.positions == NULL || self->robbers.positions == NULL)
+    return UINT_MAX;
+  for (size_t i = 0; i < self->robbers.size; i++)
+    for (size_t j = 0; j < self->cops.size; j++)
+      if (self->robbers.positions[i] == self->cops.positions[j])
+        {
+          fprintf (stderr, "Captured robber at position %zu\n",
+                   self->robbers.positions[i]->index);
+          vector_remove_at (&(self->robbers), i);
+          return game_capture_robbers (self);
+        }
+  return self->robbers.size;
 }
 
 size_t *read_positions (size_t len)
@@ -52,14 +154,25 @@ size_t *read_positions (size_t len)
   for (size_t i = 0; i < len; i++)
     {
       char buffer[100];
-      fgets (buffer, sizeof buffer, stdin);
-      sscanf (buffer, "%zu", &pos[i]);
+      char *msg = fgets (buffer, sizeof buffer, stdin);
+      if (msg == NULL || sscanf (buffer, "%zu", &pos[i]) != 1)
+        {
+          fprintf (stderr, "Error while reading new positions\n");
+          exit (1);
+        }
     }
   return pos;
 }
 
 int main (int argc, const char *argv[])
 {
+  struct timeval t1;
+  gettimeofday (&t1, NULL);
+  srand (t1.tv_usec * t1.tv_sec);
+  // Initialize game
+  game g;
+  game_create (&g);
+
   // Initialize data structures
   if (argc != 3)
     {
@@ -67,67 +180,57 @@ int main (int argc, const char *argv[])
                "Incorrect number of arguments: ./game filename 0/1\n");
       exit (-1);
     }
-  board b;
   FILE *file = fopen (argv[1], "r");
   if (file == NULL)
     {
       fprintf (stderr, "Error opening input file");
       exit (-1);
     }
-  bool success = board_read_from (&b, file);
+  bool success = board_read_from (&(g.b), file);
   fclose (file);
   if (!success)
     {
       fprintf (stderr, "Error parsing input file");
       exit (-1);
     }
-  enum role curr = atoi (argv[2]);
-
-  // Determine initial positions
-  fprintf (stderr, "Initial positions:\n");
-  size_t *pos;
-  if (curr == COPS)
-    {
-      pos = board_initial_position (&b, curr);
-      print_positions (pos, b.cops_len);
-      pos = read_positions (b.robbers_len);
-      board_update_position (&b, pos, ROBBERS);
-      free (pos);
-    }
-  else
-    {
-      pos = read_positions (b.cops_len);
-      board_update_position (&b, pos, COPS);
-      free (pos);
-      pos = board_initial_position (&b, curr);
-      print_positions (pos, b.robbers_len);
-    }
+  g.cops.size = g.b.cops;
+  g.robbers.size = g.b.robbers;
+  g.r = atoi (argv[2]);
+  g.remaining_turn = g.b.max_turn + 2;
 
   // Play each turn
   enum role turn = COPS;
-  while (b.robbers_len != 0 && b.remaining_turn != 0)
+  while (game_capture_robbers (&g) != 0 && g.remaining_turn != 0)
     {
-      fprintf (stderr, "Turn for %s (remaining: %zu)\n",
-               turn == COPS ? "cops" : "robbers", b.remaining_turn);
-      if (turn == curr)
+      if (g.remaining_turn > g.b.max_turn)
+        fprintf (stderr, "Initial positions for %s\n",
+                 turn == COPS ? "cops" : "robbers");
+      else
+        fprintf (stderr, "Turn for %s (remaining: %zu)\n",
+                 turn == COPS ? "cops" : "robbers", g.remaining_turn);
+      if (turn == g.r)
         {
-          pos = board_next_position (&b, curr);
-          print_positions (pos, curr == COPS ? b.cops_len : b.robbers_len);
+          // This is the turn of this program to find new positions
+          vector *pos = game_next_position (&g);
+          vector_print (pos);
         }
       else
         {
-          pos = read_positions (curr != COPS ? b.cops_len : b.robbers_len);
-          board_update_position (&b, pos, turn);
+          // This is the turn of the adversary program to find new
+          // positions
+          size_t len = g.r == COPS ? g.robbers.size : g.cops.size;
+          size_t *pos = read_positions (len);
+          game_update_position (&g, pos);
           free (pos);
         }
       turn = turn == COPS ? ROBBERS : COPS;
-      b.remaining_turn--;
+      g.remaining_turn--;
     }
 
   // Finalization
-  if (b.robbers_len != 0)
-    fprintf (stderr, "Robbers win !\n");
+  if (g.robbers.size != 0)
+    fprintf (stderr, "Robbers win!\n");
   else
-    fprintf (stderr, "Cops win !\n");
-  board_destroy (&b);
+    fprintf (stderr, "Cops win!\n");
+  game_destroy (&g);
 }

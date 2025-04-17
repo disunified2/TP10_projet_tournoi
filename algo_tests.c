@@ -10,9 +10,10 @@
     else { tests_pass++; } tests_run++; } while (0)
 int tests_pass, tests_run, tests_index;
 
-static char *test_algo_chain ()
+static char *test_board_Floyd_Warshall_chain ()
 {
   board b;
+  board_create (&b);
 
   char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
     "Vertices: 3\n0 0\n0 0\n0 0\n" "Edges: 2\n0 1\n1 2\n";
@@ -36,7 +37,7 @@ static char *test_algo_chain ()
 }
 
 char *(*tests_functions[]) () = {
-  test_algo_chain,
+  test_board_Floyd_Warshall_chain,
 };
 
 int main (int argc, const char *argv[])
