@@ -4,9 +4,18 @@
 
 void board_create (board * self)
 {
-  //TODO dummy instruction that MUST be changed
-  if (self->size)
-    return;
+  if (self == NULL)
+    {
+      return;
+    }
+  self->size = 0;
+  self->cops = 0;
+  self->robbers = 0;
+  self->max_turn = 0;
+
+  self->vertices = NULL;
+  self->dist = NULL;
+  self->next = NULL;
 }
 
 /*
@@ -55,11 +64,32 @@ bool board_read_from (board * self, FILE * file)
   return true;
 }
 
+void board_vertex_destroy (board_vertex * self)
+{
+  free (self->neighbors);
+  free (self->optim);
+  self->neighbors = NULL;
+  self->optim = NULL;
+}
+
 void board_destroy (board * self)
 {
-  //TODO dummy instruction that MUST be changed
-  if (self->size)
-    return;
+  if (self == NULL)
+    {
+      return;
+    }
+
+  for (size_t i = 0; i < self->size; i++)
+    {
+      board_vertex_destroy (self->vertices[i]);
+      free (self->vertices[i]);
+    }
+  free (self->dist);
+  free (self->next);
+  free (self->vertices);
+  self->dist = NULL;
+  self->next = NULL;
+  self->vertices = NULL;
 }
 
 bool board_is_valid_move (board * self, size_t source, size_t dest)
