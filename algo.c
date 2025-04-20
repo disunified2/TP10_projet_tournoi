@@ -33,13 +33,17 @@ void board_add_edge_uni (board_vertex * source, board_vertex * destination)
 bool board_read_from (board * self, FILE * file)
 {
   char line[128];
-  fgets (line, sizeof (line), file);
+  if (!fgets (line, sizeof (line), file))
+    return false;
   sscanf (line, "Cops: %zu", &(self->cops));
-  fgets (line, sizeof (line), file);
+  if (!fgets (line, sizeof (line), file))
+    return false;
   sscanf (line, "Robbers: %zu", &(self->robbers));
-  fgets (line, sizeof (line), file);
+  if (!fgets (line, sizeof (line), file))
+    return false;
   sscanf (line, "Max turn: %zu", &(self->max_turn));
-  fgets (line, sizeof (line), file);
+  if (!fgets (line, sizeof (line), file))
+    return false;
   sscanf (line, "Vertices: %zu", &(self->size));
   self->vertices = calloc (self->size, sizeof (*self->vertices));
   for (size_t i = 0; i < self->size; i++)
@@ -48,15 +52,18 @@ bool board_read_from (board * self, FILE * file)
       self->vertices[i]->index = i;
       self->vertices[i]->degree = 0;
       self->vertices[i]->neighbors = NULL;
-      fgets (line, sizeof (line), file);
+      if (!fgets (line, sizeof (line), file))
+        return false;
     }
   size_t edges = 0;
-  fgets (line, sizeof (line), file);
+  if (!fgets (line, sizeof (line), file))
+    return false;
   sscanf (line, "Edges: %zu", &edges);
   for (size_t i = 0; i < edges; i++)
     {
       size_t v1, v2;
-      fgets (line, sizeof (line), file);
+      if (!fgets (line, sizeof (line), file))
+        return false;
       sscanf (line, "%zu %zu", &v1, &v2);
       board_add_edge_uni (self->vertices[v1], self->vertices[v2]);
       board_add_edge_uni (self->vertices[v2], self->vertices[v1]);
