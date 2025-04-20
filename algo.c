@@ -94,8 +94,34 @@ void board_destroy (board * self)
 
 bool board_is_valid_move (board * self, size_t source, size_t dest)
 {
-  //TODO dummy instruction that MUST be changed
-  return self->size == source + dest;
+  if (self == NULL)
+    {
+      return false;
+    }
+
+  if (source >= self->size || dest >= self->size)
+    {
+      return false;
+    }
+
+  if (source == dest)
+    {
+      return true;
+    }
+
+  if (self->vertices[source] == NULL || self->vertices[dest] == NULL)
+    {
+      return false;
+    }
+
+  for (size_t i = 0; i < self->size; i++)
+    {
+      if (self->vertices[i]->neighbors[dest] != NULL)
+        {
+          return true;
+        }
+    }
+  return false;
 }
 
 void board_Floyd_Warshall (board * self)
