@@ -87,11 +87,54 @@ static char *test_board_is_valid_identical_vertex ()
   return NULL;
 }
 
+static char *test_board_is_valid_false ()
+{
+  board b;
+  board_create (&b);
+
+  char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
+    "Vertices: 3\n0 0\n0 1\n1 0\n" "Edges: 2\n0 1\n1 2\n";
+  FILE *file = tmpfile ();
+  fputs (data, file);
+  rewind (file);
+
+  bool read = board_read_from (&b, file);
+
+  mu_assert ("error, failure reading board", read == true);
+  mu_assert ("error with inexistant edge",
+             board_is_valid_move (&b, 0, 2) == false);
+
+  board_destroy (&b);
+  return NULL;
+}
+
+static char *test_board_is_valid_true ()
+{
+  board b;
+  board_create (&b);
+
+  char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
+    "Vertices: 3\n0 0\n0 1\n1 0\n" "Edges: 2\n0 1\n1 2\n";
+  FILE *file = tmpfile ();
+  fputs (data, file);
+  rewind (file);
+
+  bool read = board_read_from (&b, file);
+
+  mu_assert ("error, failure reading board", read == true);
+  mu_assert ("error with valid move", board_is_valid_move (&b, 0, 1) == true);
+
+  board_destroy (&b);
+  return NULL;
+}
+
 char *(*tests_functions[]) () = {
   //test_board_Floyd_Warshall_chain,
   test_board_is_valid_move_null,
   test_board_is_valid_invalid,
-  test_board_is_valid_identical_vertex
+  test_board_is_valid_identical_vertex,
+  test_board_is_valid_false,
+  test_board_is_valid_true,
 };
 
 int main (int argc, const char *argv[])
