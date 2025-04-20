@@ -116,7 +116,8 @@ bool board_is_valid_move (board * self, size_t source, size_t dest)
 
   for (size_t i = 0; i < self->size; i++)
     {
-      if (self->vertices[i]->neighbors[dest] != NULL)
+      if (self->vertices[i]->degree > dest
+          && self->vertices[i]->neighbors[dest] != NULL)
         {
           return true;
         }
