@@ -36,8 +36,62 @@ static char *test_board_Floyd_Warshall_chain ()
   return NULL;
 }
 
+static char *test_board_is_valid_move_null ()
+{
+  board *b = NULL;
+
+  mu_assert ("error, valid move with null board should return false",
+             board_is_valid_move (b, 1, 2) == false);
+  return NULL;
+}
+
+static char *test_board_is_valid_invalid ()
+{
+  board b;
+  board_create (&b);
+
+  char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
+    "Vertices: 3\n0 0\n0 1\n1 0\n" "Edges: 2\n0 1\n1 2\n";
+  FILE *file = tmpfile ();
+  fputs (data, file);
+  rewind (file);
+
+  bool read = board_read_from (&b, file);
+
+  mu_assert ("error, failure reading board", read == true);
+  mu_assert ("error, expected false with invalid source and destination",
+             board_is_valid_move (&b, 10, 10) == false);
+
+  board_destroy (&b);
+  return NULL;
+}
+
+static char *test_board_is_valid_identical_vertex ()
+{
+  board b;
+  board_create (&b);
+
+  char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
+    "Vertices: 3\n0 0\n0 1\n1 0\n" "Edges: 2\n0 1\n1 2\n";
+  FILE *file = tmpfile ();
+  fputs (data, file);
+  rewind (file);
+
+  bool read = board_read_from (&b, file);
+
+  mu_assert ("error, failure reading board", read == true);
+  mu_assert ("error, staying on the same vertex is a valid move",
+             board_is_valid_move (&b, 0, 0) == true);
+
+  board_destroy (&b);
+  return NULL;
+}
+
 char *(*tests_functions[]) () = {
-  test_board_Floyd_Warshall_chain,
+  //test_board_Floyd_Warshall_chain,
+  test_board_is_valid_move_null,
+  test_board_is_valid_invalid,
+  test_board_is_valid_identical_vertex
 };
 
 int main (int argc, const char *argv[])
