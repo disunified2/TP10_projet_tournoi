@@ -95,6 +95,10 @@ void board_destroy (board * self)
         {
           free (self->dist[i]);
         }
+      if (self->next != NULL)
+        {
+          free (self->next[i]);
+        }
     }
   free (self->dist);
   free (self->next);
@@ -145,7 +149,7 @@ void board_Floyd_Warshall (board * self)
     }
 
   self->dist = calloc (self->size, sizeof (unsigned int *));
-  self->next = calloc (self->size, sizeof(size_t*));
+  self->next = calloc (self->size, sizeof (size_t *));
   for (size_t i = 0; i < self->size; i++)
     {
       self->dist[i] = calloc (self->size, sizeof (unsigned int));
@@ -161,92 +165,105 @@ void board_Floyd_Warshall (board * self)
         }
     }
 
-  for (size_t u = 0; u < self->size; u++) {
-    board_vertex *vertex = self->vertices[u];
-    for (size_t i = 0; i < self->size; i++) {
-      size_t v = vertex->neighbors[i]->index;
-      self->dist[u][v] = 1;
-      self->next[u][v] = v;
-    }
-  }
-
-  for (size_t v = 0; v < self->size; v++) {
-    self->dist[v][v] = 0;
-    self->next[v][v] = v;
-  }
-
-  for (size_t w = 0; w < self->size; w++) {
-    for (size_t u = 0; u < self->size; u++) {
-      for (size_t v = 0; v < self->size; v++) {
-        if (self->dist[u][v] > self->dist[u][w] + self->dist[w][v]) {
-          self->dist[u][v] = self->dist[u][w] + self->dist[w][v];
-          self->next[u][v] = self->next[u][w];
+  for (size_t u = 0; u < self->size; u++)
+    {
+      board_vertex *vertex = self->vertices[u];
+      for (size_t i = 0; i < self->size; i++)
+        {
+          size_t v = vertex->neighbors[i]->index;
+          self->dist[u][v] = 1;
+          self->next[u][v] = v;
         }
-      }
     }
-  }
+
+  for (size_t v = 0; v < self->size; v++)
+    {
+      self->dist[v][v] = 0;
+      self->next[v][v] = v;
+    }
+
+  for (size_t w = 0; w < self->size; w++)
+    {
+      for (size_t u = 0; u < self->size; u++)
+        {
+          for (size_t v = 0; v < self->size; v++)
+            {
+              if (self->dist[u][v] > self->dist[u][w] + self->dist[w][v])
+                {
+                  self->dist[u][v] = self->dist[u][w] + self->dist[w][v];
+                  self->next[u][v] = self->next[u][w];
+                }
+            }
+        }
+    }
 }
 
 size_t board_dist (board * self, size_t source, size_t dest)
 {
-  if (self == NULL) {
-    return 0;
-  }
+  if (self == NULL)
+    {
+      return 0;
+    }
 
   if (source >= self->size || dest >= self->size)
-  {
-    return 0;
-  }
+    {
+      return 0;
+    }
 
   if (source == dest)
-  {
-    return 0;
-  }
+    {
+      return 0;
+    }
 
   if (self->vertices[source] == NULL || self->vertices[dest] == NULL)
-  {
-    return 0;
-  }
+    {
+      return 0;
+    }
 
-  if (self->dist == NULL) {
-    return 0;
-  }
+  if (self->dist == NULL)
+    {
+      return 0;
+    }
 
-  if (self->dist[source][dest]) {
-    return 0;
-  }
+  if (self->dist[source][dest])
+    {
+      return 0;
+    }
 
   return self->dist[source][dest];
 }
 
 size_t board_next (board * self, size_t source, size_t dest)
 {
-  if (self == NULL) {
-    return 0;
-  }
+  if (self == NULL)
+    {
+      return 0;
+    }
 
   if (source >= self->size || dest >= self->size)
-  {
-    return 0;
-  }
+    {
+      return 0;
+    }
 
   if (source == dest)
-  {
-    return 0;
-  }
+    {
+      return 0;
+    }
 
   if (self->vertices[source] == NULL || self->vertices[dest] == NULL)
-  {
-    return 0;
-  }
+    {
+      return 0;
+    }
 
-  if (self->next == NULL) {
-    return 0;
-  }
+  if (self->next == NULL)
+    {
+      return 0;
+    }
 
-  if (self->next[source][dest]) {
-    return 0;
-  }
+  if (self->next[source][dest])
+    {
+      return 0;
+    }
 
   return self->next[source][dest];
 }

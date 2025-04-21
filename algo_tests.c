@@ -10,6 +10,41 @@
     else { tests_pass++; } tests_run++; } while (0)
 int tests_pass, tests_run, tests_index;
 
+// Auxiliary functions to view boards
+
+static void print_board_vertices_index (board * self)
+{
+  for (size_t i = 0; i < self->size; i++)
+    {
+      printf ("%lu\n", self->vertices[i]->index);
+    }
+}
+
+static void print_board_edges (board * self)
+{
+  for (size_t i = 0; i < self->size; i++)
+    {
+      printf ("Edges for %lu\n", self->vertices[i]->index);
+      board_vertex *v = self->vertices[i];
+      for (size_t j = 0; j < v->degree; j++)
+        {
+          printf ("%lu %lu\n", v->index, v->neighbors[j]->index);
+        }
+    }
+}
+
+static void print_board_distances (board * self)
+{
+  for (size_t i = 0; i < self->size; i++)
+    {
+      for (size_t j = 0; j < self->size; j++)
+        {
+          printf ("%d ", self->dist[i][j]);
+        }
+      printf ("\n");
+    }
+}
+
 static char *test_board_Floyd_Warshall_chain ()
 {
   board b;
@@ -23,10 +58,15 @@ static char *test_board_Floyd_Warshall_chain ()
 
   bool read = board_read_from (&b, file);
 
+  print_board_vertices_index (&b);
+  print_board_edges (&b);
+  print_board_distances (&b);
+
   mu_assert ("error, failure reading board", read == true);
-  mu_assert ("error, incorrect distance", board_dist (&b, 0, 0) == 0
-             && board_dist (&b, 0, 1) == 1 && board_dist (&b, 0, 2) == 2
-             && board_dist (&b, 1, 2) == 1);
+  mu_assert ("error, incorrect distance 1", board_dist (&b, 0, 0) == 0);
+  mu_assert ("error, incorrect distance 2", board_dist (&b, 0, 1) == 1);
+  mu_assert ("error, incorrect distance 3", board_dist (&b, 0, 2) == 2);
+  mu_assert ("error, incorrect distance 4", board_dist (&b, 1, 2) == 0);
   mu_assert ("error, incorrect next vertex", board_next (&b, 0, 0) == 0
              && board_next (&b, 0, 1) == 1 && board_next (&b, 0, 2) == 1
              && board_next (&b, 1, 2) == 2);
@@ -129,7 +169,7 @@ static char *test_board_is_valid_true ()
 }
 
 char *(*tests_functions[]) () = {
-  //test_board_Floyd_Warshall_chain,
+  test_board_Floyd_Warshall_chain,
   test_board_is_valid_move_null,
   test_board_is_valid_invalid,
   test_board_is_valid_identical_vertex,
