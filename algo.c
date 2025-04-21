@@ -189,12 +189,64 @@ void board_Floyd_Warshall (board * self)
 
 size_t board_dist (board * self, size_t source, size_t dest)
 {
-  //TODO dummy instruction that MUST be changed
-  return self->size + source + dest;
+  if (self == NULL) {
+    return 0;
+  }
+
+  if (source >= self->size || dest >= self->size)
+  {
+    return 0;
+  }
+
+  if (source == dest)
+  {
+    return 0;
+  }
+
+  if (self->vertices[source] == NULL || self->vertices[dest] == NULL)
+  {
+    return 0;
+  }
+
+  if (self->dist == NULL) {
+    return 0;
+  }
+
+  if (self->dist[source][dest]) {
+    return 0;
+  }
+
+  return self->dist[source][dest];
 }
 
 size_t board_next (board * self, size_t source, size_t dest)
 {
-  //TODO dummy instruction that MUST be changed
-  return self->size + source + dest;
+  if (self == NULL) {
+    return 0;
+  }
+
+  if (source >= self->size || dest >= self->size)
+  {
+    return 0;
+  }
+
+  if (source == dest)
+  {
+    return 0;
+  }
+
+  if (self->vertices[source] == NULL || self->vertices[dest] == NULL)
+  {
+    return 0;
+  }
+
+  if (self->next == NULL) {
+    return 0;
+  }
+
+  if (self->next[source][dest]) {
+    return 0;
+  }
+
+  return self->next[source][dest];
 }
