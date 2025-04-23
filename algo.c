@@ -24,6 +24,10 @@ void board_create (board * self)
  */
 void board_add_edge_uni (board_vertex * source, board_vertex * destination)
 {
+  if (source == NULL || destination == NULL)
+    {
+      return;
+    }
   source->degree++;
   source->neighbors =
     realloc (source->neighbors,
@@ -33,6 +37,11 @@ void board_add_edge_uni (board_vertex * source, board_vertex * destination)
 
 bool board_read_from (board * self, FILE * file)
 {
+  if (self == NULL || file == NULL)
+    {
+      return false;
+    }
+
   char line[128];
   if (!fgets (line, sizeof (line), file))
     return false;
@@ -66,9 +75,14 @@ bool board_read_from (board * self, FILE * file)
       if (!fgets (line, sizeof (line), file))
         return false;
       sscanf (line, "%zu %zu", &v1, &v2);
+      if (v1 > self->size - 1 || v2 > self->size - 1)
+        {
+          return false;
+        }
       board_add_edge_uni (self->vertices[v1], self->vertices[v2]);
       board_add_edge_uni (self->vertices[v2], self->vertices[v1]);
     }
+  board_Floyd_Warshall (self);
   return true;
 }
 
@@ -168,7 +182,7 @@ void board_Floyd_Warshall (board * self)
   for (size_t u = 0; u < self->size; u++)
     {
       board_vertex *vertex = self->vertices[u];
-      for (size_t i = 0; i < self->size; i++)
+      for (size_t i = 0; i < vertex->degree; i++)
         {
           size_t v = vertex->neighbors[i]->index;
           self->dist[u][v] = 1;
@@ -210,22 +224,12 @@ size_t board_dist (board * self, size_t source, size_t dest)
       return 0;
     }
 
-  if (source == dest)
-    {
-      return 0;
-    }
-
   if (self->vertices[source] == NULL || self->vertices[dest] == NULL)
     {
       return 0;
     }
 
   if (self->dist == NULL)
-    {
-      return 0;
-    }
-
-  if (self->dist[source][dest])
     {
       return 0;
     }
@@ -256,11 +260,6 @@ size_t board_next (board * self, size_t source, size_t dest)
     }
 
   if (self->next == NULL)
-    {
-      return 0;
-    }
-
-  if (self->next[source][dest])
     {
       return 0;
     }
