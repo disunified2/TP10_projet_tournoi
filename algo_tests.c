@@ -12,7 +12,7 @@ int tests_pass, tests_run, tests_index;
 
 // Auxiliary functions to view boards
 
-static void print_board_vertices_index (board * self)
+void print_board_vertices_index (board * self)
 {
   for (size_t i = 0; i < self->size; i++)
     {
@@ -20,7 +20,7 @@ static void print_board_vertices_index (board * self)
     }
 }
 
-static void print_board_edges (board * self)
+void print_board_edges (board * self)
 {
   for (size_t i = 0; i < self->size; i++)
     {
@@ -33,7 +33,7 @@ static void print_board_edges (board * self)
     }
 }
 
-static void print_board_distances (board * self)
+void print_board_distances (board * self)
 {
   for (size_t i = 0; i < self->size; i++)
     {
@@ -45,10 +45,24 @@ static void print_board_distances (board * self)
     }
 }
 
-static char *test_board_Floyd_Warshall_chain ()
+static char *test_board_read_from_null_file ()
 {
   board b;
   board_create (&b);
+
+  bool read = board_read_from (&b, NULL);
+
+  mu_assert ("error, null file cannot be read", read == false);
+  mu_assert ("error, board is not correctly initialized with null file",
+             b.vertices == NULL);
+
+  board_destroy (&b);
+  return NULL;
+}
+
+static char *test_board_read_from_null_board ()
+{
+  board *b = NULL;
 
   char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
     "Vertices: 3\n0 0\n0 0\n0 0\n" "Edges: 2\n0 1\n1 2\n";
@@ -56,23 +70,29 @@ static char *test_board_Floyd_Warshall_chain ()
   fputs (data, file);
   rewind (file);
 
+  bool read = board_read_from (b, file);
+
+  mu_assert ("error, null board cannot be initialized", read == false);
+
+  return NULL;
+}
+
+static char *test_board_read_from_invalid_edges ()
+{
+  board b;
+  board_create (&b);
+
+  char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
+    "Vertices: 3\n0 0\n0 0\n0 0\n" "Edges: 2\n0 3\n3 2\n";
+  FILE *file = tmpfile ();
+  fputs (data, file);
+  rewind (file);
+
   bool read = board_read_from (&b, file);
 
-  print_board_vertices_index (&b);
-  print_board_edges (&b);
-  print_board_distances (&b);
-
-  mu_assert ("error, failure reading board", read == true);
-  mu_assert ("error, incorrect distance 1", board_dist (&b, 0, 0) == 0);
-  mu_assert ("error, incorrect distance 2", board_dist (&b, 0, 1) == 1);
-  mu_assert ("error, incorrect distance 3", board_dist (&b, 0, 2) == 2);
-  mu_assert ("error, incorrect distance 4", board_dist (&b, 1, 2) == 0);
-  mu_assert ("error, incorrect next vertex", board_next (&b, 0, 0) == 0
-             && board_next (&b, 0, 1) == 1 && board_next (&b, 0, 2) == 1
-             && board_next (&b, 1, 2) == 2);
+  mu_assert ("error, read should be false with invalid edges", read == false);
 
   board_destroy (&b);
-
   return NULL;
 }
 
@@ -85,7 +105,7 @@ static char *test_board_is_valid_move_null ()
   return NULL;
 }
 
-static char *test_board_is_valid_invalid ()
+static char *test_board_is_valid_move_invalid ()
 {
   board b;
   board_create (&b);
@@ -106,7 +126,7 @@ static char *test_board_is_valid_invalid ()
   return NULL;
 }
 
-static char *test_board_is_valid_identical_vertex ()
+static char *test_board_is_valid_move_identical_vertex ()
 {
   board b;
   board_create (&b);
@@ -127,7 +147,7 @@ static char *test_board_is_valid_identical_vertex ()
   return NULL;
 }
 
-static char *test_board_is_valid_false ()
+static char *test_board_is_valid_move_false ()
 {
   board b;
   board_create (&b);
@@ -148,7 +168,7 @@ static char *test_board_is_valid_false ()
   return NULL;
 }
 
-static char *test_board_is_valid_true ()
+static char *test_board_is_valid_move_true ()
 {
   board b;
   board_create (&b);
@@ -168,13 +188,108 @@ static char *test_board_is_valid_true ()
   return NULL;
 }
 
+static char *test_board_is_valid_move_multiple_edges ()
+{
+  board b;
+  board_create (&b);
+
+  char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
+    "Vertices: 3\n0 0\n0 1\n1 0\n" "Edges: 2\n0 1\n1 2\n";
+  FILE *file = tmpfile ();
+  fputs (data, file);
+  rewind (file);
+
+  bool read = board_read_from (&b, file);
+
+  mu_assert ("error, failure reading board", read == true);
+  mu_assert ("error with valid move",
+             board_is_valid_move (&b, 0, 2) == false);
+
+  board_destroy (&b);
+  return NULL;
+}
+
+static char *test_board_Floyd_Warshall_chain ()
+{
+  board b;
+  board_create (&b);
+
+  char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
+    "Vertices: 3\n0 0\n0 0\n0 0\n" "Edges: 2\n0 1\n1 2\n";
+  FILE *file = tmpfile ();
+  fputs (data, file);
+  rewind (file);
+
+  bool read = board_read_from (&b, file);
+
+  mu_assert ("error, failure reading board", read == true);
+  mu_assert ("error, incorrect distance", board_dist (&b, 0, 0) == 0
+             && board_dist (&b, 0, 1) == 1 && board_dist (&b, 0, 2) == 2
+             && board_dist (&b, 1, 2) == 1);
+  mu_assert ("error, incorrect next vertex", board_next (&b, 0, 0) == 0
+             && board_next (&b, 0, 1) == 1 && board_next (&b, 0, 2) == 1
+             && board_next (&b, 1, 2) == 2);
+
+  board_destroy (&b);
+
+  return NULL;
+}
+
+static char *test_board_Floyd_Warshall_single ()
+{
+  board b;
+  board_create (&b);
+
+  char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
+    "Vertices: 1\n0 0\n" "Edges: 0\n";
+  FILE *file = tmpfile ();
+  fputs (data, file);
+  rewind (file);
+
+  bool read = board_read_from (&b, file);
+
+  mu_assert ("error, failure reading board", read == true);
+  mu_assert ("error, the distance is incorrect", board_dist (&b, 0, 0) == 0);
+  mu_assert ("error, the next is incorrect", board_next (&b, 0, 0) == 0);
+
+  board_destroy (&b);
+  return NULL;
+}
+
+static char *test_board_Floyd_Warshall_square ()
+{
+  board b;
+  board_create (&b);
+
+  char data[] = "Cops: 1\nRobbers: 1\nMax turn: 1\n"
+    "Vertices: 4\n0 0\n0 0\n0 0\n0 0\n" "Edges: 4\n0 1\n1 2\n2 3\n3 0\n";
+  FILE *file = tmpfile ();
+  fputs (data, file);
+  rewind (file);
+
+  bool read = board_read_from (&b, file);
+
+  mu_assert ("error, failure reading board", read == true);
+  mu_assert ("error, incorrect distance", board_dist (&b, 0, 0) == 0
+             && board_dist (&b, 0, 3) == 1);
+
+  board_destroy (&b);
+  return NULL;
+}
+
 char *(*tests_functions[]) () = {
-  test_board_Floyd_Warshall_chain,
+  test_board_read_from_null_file,
+  test_board_read_from_null_board,
+  test_board_read_from_invalid_edges,
   test_board_is_valid_move_null,
-  test_board_is_valid_invalid,
-  test_board_is_valid_identical_vertex,
-  test_board_is_valid_false,
-  test_board_is_valid_true,
+  test_board_is_valid_move_invalid,
+  test_board_is_valid_move_identical_vertex,
+  test_board_is_valid_move_false,
+  test_board_is_valid_move_true,
+  test_board_is_valid_move_multiple_edges,
+  test_board_Floyd_Warshall_chain,
+  test_board_Floyd_Warshall_single,
+  test_board_Floyd_Warshall_square,
 };
 
 int main (int argc, const char *argv[])
