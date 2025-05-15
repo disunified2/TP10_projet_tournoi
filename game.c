@@ -11,6 +11,8 @@ typedef struct
   size_t size;
 } vector;
 
+
+
 void vector_create (vector * self)
 {
   if (self == NULL)
